@@ -1,0 +1,42 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# [1] 변수 설정 (학부 수준의 표준 가정치 사용)
+pi_t = 2.29          # 2026년 5월 물가 예측치 (%)
+pi_star = 2.0        # 한국은행 물가안정 목표 (%)
+r_star = 2.0         # 한국의 실질 잠재성장률 (추정치)
+gdp_gap = 0.5        # GDP 갭 (경기가 잠재 수준보다 약간 좋다고 가정)
+
+# [2] 테일러 준칙 계산 함수
+def calculate_taylor_rate(r_star, pi_t, pi_star, gdp_gap):
+    # 공식: 적정금리 = 잠재성장률 + 현재물가 + 0.5*(물가갭) + 0.5*(GDP갭)
+    target_rate = r_star + pi_t + 0.5 * (pi_t - pi_star) + 0.5 * gdp_gap
+    return target_rate
+
+# 계산 실행
+taylor_rate = calculate_taylor_rate(r_star, pi_t, pi_star, gdp_gap)
+current_rate = 3.50  # 현재 한국은행 기준금리
+
+# [3] 시각화 및 결과 비교
+labels = ['현재 기준금리', '테일러 준칙 적정금리']
+values = [current_rate, taylor_rate]
+
+plt.figure(figsize=(8, 6))
+bars = plt.bar(labels, values, color=['gray', 'orange'], alpha=0.7)
+
+# 수치 표시
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval + 0.05, f'{yval:.2f}%', ha='center', va='bottom', fontsize=12)
+
+plt.axhline(current_rate, color='red', linestyle='--', alpha=0.5)
+plt.title('2026년 5월 기준금리 적정성 평가 (Taylor Rule)', fontsize=15)
+plt.ylabel('금리 (%)')
+plt.ylim(0, 5)
+plt.grid(axis='y', linestyle=':', alpha=0.6)
+plt.show()
+
+print(f"--- 분석 결과 ---")
+print(f"계산된 적정 금리: {taylor_rate:.2f}%")
+print(f"현재 기준 금리: {current_rate:.2f}%")
+print(f"금리 격차: {taylor_rate – current_rate:.2f}%p")

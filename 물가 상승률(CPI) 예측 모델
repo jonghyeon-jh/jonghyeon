@@ -1,0 +1,69 @@
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# [1] 데이터 수집 함수 (여러 항목 코드를 시도하는 기능 추가)
+def get_cpi_data(auth_key, start, end):
+    # 한국은행에서 소비자물가 총지수에 주로 사용하는 코드들입니다.
+    item_codes = ["0", "10101", "1010101"] 
+    stat_codes = ["021Y125", "021Y212", "901Y009"] # 신규/기존 통계표 코드들
+    
+    for s_code in stat_codes:
+        for i_code in item_codes:
+            url = f"https://ecos.bok.or.kr/api/StatisticSearch/{auth_key.strip()}/json/kr/1/1000/{s_code}/M/{start}/{end}/{i_code}"
+            try:
+                res = requests.get(url).json()
+                if 'StatisticSearch' in res:
+                    print(f"✅ 성공! 통계표: {s_code}, 항목코드: {i_code} 데이터를 찾았습니다.")
+                    df = pd.DataFrame(res['StatisticSearch']['row'])
+                    df = df[['TIME', 'DATA_VALUE']].rename(columns={'TIME':'날짜', 'DATA_VALUE':'CPI'})
+                    df['CPI'] = pd.to_numeric(df['CPI'])
+                    return df
+            except:
+                continue
+    return None
+
+# [2] 환경 설정
+auth_key = "EDET47X4GANOD3A2G0VF"
+start_date, end_date = "201501", "202512"
+
+# [3] 데이터 로드
+print("🚀 최적의 물가 데이터 경로를 탐색 중입니다...")
+df_raw = get_cpi_data(auth_key, start_date, end_date)
+
+if df_raw is not None and len(df_raw) > 24:
+    # 물가상승률(전년동기대비) 계산
+    df_raw['물가상승률'] = df_raw['CPI'].pct_change(12) * 100
+    df = df_raw.dropna().reset_index(drop=True)
+    
+    # [4] ARIMA 모델 학습 및 예측
+    model = ARIMA(df['물가상승률'], order=(1, 1, 1))
+    model_fit = model.fit()
+    forecast = model_fit.get_forecast(steps=12)
+    forecast_values = forecast.predicted_mean
+    forecast_idx = pd.date_range(start='2026-01-01', periods=12, freq='ME').strftime('%Y%m')
+
+    # [5] 시각화
+    plt.figure(figsize=(12, 6))
+    plt.plot(df['날짜'].tail(48), df['물가상승률'].tail(48), label='최근 실제 물가', color='black', marker='o')
+    plt.plot(forecast_idx, forecast_values, label='2026년 예측치', color='red', linestyle='--', marker='s')
+    plt.axhline(2.0, color='blue', linestyle=':', label='BOK 목표치(2%)')
+    
+    # 2026년 5월 수치 표시
+    may_val = forecast_values.iloc[4] # 1월(0)부터 시작하므로 5월은 인덱스 4
+    plt.annotate(f'2026.05: {may_val:.2f}%', xy=(forecast_idx[4], may_val), xytext=(10, 20),
+                 textcoords='offset points', arrowprops=dict(arrowstyle='->'))
+
+    plt.title('소비자물가(CPI) 예측 모델 결과', fontsize=15)
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+    
+    print(f"\n📊 2026년 5월 물가 예측치: {may_val:.2f}%")
+else:
+    print("\n❌ 데이터를 찾을 수 없습니다. ECOS 홈페이지에서 '소비자물가지수' 항목이 활성화되어 있는지 확인해 주세요.")

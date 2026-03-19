@@ -1,0 +1,55 @@
+# [1] 한글 폰트 설치 (이 셀을 실행한 후, 상단 메뉴 '런타임' -> '런타임 다시 시작'을 꼭 눌러주세요!)
+!apt-get -qq -y install fonts-nanum > /dev/null
+
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+import requests
+import pandas as pd
+
+# [2] 설치된 폰트를 파이썬에 등록
+fe = fm.FontEntry(
+    fname=r'/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf',
+    name='NanumBarunGothic')
+fm.fontManager.ttflist.insert(0, fe)
+plt.rcParams.update({'font.size': 12, 'font.family': 'NanumBarunGothic', 'axes.unicode_minus': False})
+
+# [3] 데이터 수집 및 그래프 그리기
+auth_key = "EDET47X4GANOD3A2G0VF"
+url = f"https://ecos.bok.or.kr/api/StatisticSearch/{auth_key}/json/kr/1/1000/722Y001/D/20240101/20260319/0101000"
+
+response = requests.get(url)
+result = response.json()
+
+if 'StatisticSearch' in result:
+    df = pd.DataFrame(result['StatisticSearch']['row'])
+    df = df[['TIME', 'DATA_VALUE']].rename(columns={'TIME':'날짜', 'DATA_VALUE':'기준금리'})
+    df['기준금리'] = pd.to_numeric(df['기준금리'])
+    df = df.sort_values('날짜')
+
+    # 그래프 생성
+    plt.figure(figsize=(12, 6))
+    plt.plot(df['날짜'], df['기준금리'], color='dodgerblue', linewidth=2)
+    plt.title('한국은행 기준금리 추이 (2024.01.01 ~ 2026.03.19)', fontsize=15, pad=20)
+    plt.xlabel('날짜', fontsize=12)
+    plt.ylabel('금리 (%)', fontsize=12)
+    
+    # x축 날짜가 너무 많으므로 60일 간격으로 표시
+    plt.xticks(df['날짜'][::60], rotation=45)
+    plt.grid(True, axis='y', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+else:
+    print("데이터를 불러오지 못했습니다. 인증키를 확인하세요.")
+    # 현재 폴더에 '한국은행_기준금리_데이터.csv'라는 이름으로 저장합니다.
+df.to_csv("BOK_Base_Rate_Data.csv", index=False, encoding='utf-8-sig')
+print("파일 저장 완료! 코랩 왼쪽 파일 메뉴(폴더 아이콘)에서 확인할 수 있어요.")
+# 간단한 통계치 출력
+latest_rate = df['기준금리'].iloc[-1]
+max_rate = df['기준금리'].max()
+min_rate = df['기준금리'].min()
+
+print(f"\n--- 데이터 요약 ---")
+print(f"최근 기준금리: {latest_rate}%")
+print(f"조회 기간 내 최고 금리: {max_rate}%")
+print(f"조회 기간 내 최저 금리: {min_rate}%")
+

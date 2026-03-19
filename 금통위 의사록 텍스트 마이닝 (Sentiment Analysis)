@@ -1,0 +1,51 @@
+# [1] 한국어 형태소 분석기 설치 (코랩에서 실행 시 약 1분 소요)
+!pip install konlpy
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from konlpy.tag import Okt
+from collections import Counter
+
+# [2] 분석할 의사록 샘플 (실제 의사록의 주요 문장을 예시로 넣었습니다)
+# 대회 때는 실제 PDF 내용을 텍스트로 변환해서 여기에 넣으면 됩니다.
+minutes_text = """
+물가 상승 압력이 여전히 높으므로 기준금리를 인상하여 통화 긴축 기조를 유지해야 한다는 의견이 있었습니다. 
+반면, 경기 둔화 우려가 커지고 있으므로 금리를 인하하거나 완화적인 태도를 보여야 한다는 주장도 제기되었습니다.
+부동산 시장의 과열을 막기 위해 추가적인 긴축이 필요하다는 매파적 견해가 우세했습니다.
+"""
+
+# [3] 단어 사전 정의 (매파 vs 비둘기파)
+hawk_keywords = ['인상', '긴축', '과열', '상승', '억제']
+dove_keywords = ['인하', '완화', '둔화', '하락', '지원']
+
+# [4] 텍스트 분석 실행
+okt = Okt()
+nouns = okt.nouns(minutes_text) # 명사만 추출
+
+# 단어 빈도수 계산
+count = Counter(nouns)
+hawk_count = sum(count[word] for word in hawk_keywords)
+dove_count = sum(count[word] for word in dove_keywords)
+
+# [5] Hawk-Dove Score 계산 (간단한 수식)
+# 점수 = (매파 단어 수 - 비둘기파 단어 수) / 전체 관련 단어 수
+total_keywords = hawk_count + dove_count
+if total_keywords > 0:
+    sentiment_score = (hawk_count - dove_count) / total_keywords
+else:
+    sentiment_score = 0
+
+# [6] 시각화
+labels = ['매파적 단어', '비둘기파적 단어']
+values = [hawk_count, dove_count]
+
+plt.figure(figsize=(8, 5))
+plt.bar(labels, values, color=['red', 'blue'], alpha=0.6)
+plt.title(f'금통위 의사록 감성 분석 (Score: {sentiment_score:.2f})')
+plt.ylabel('출현 빈도')
+plt.show()
+
+print(f"--- 분석 결과 ---")
+print(f"매파(Hawkish) 단어 발견: {hawk_count}회")
+print(f"비둘기파(Dovish) 단어 발견: {dove_count}회")
+print(f"최종 감성 점수: {sentiment_score:.2f} (1에 가까울수록 긴축적, -1에 가까울수록 완화적)")
