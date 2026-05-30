@@ -1,0 +1,47 @@
+# ==========================================
+# 프로그램명: 1분 파이썬 핵심 개념 마스터 퀴즈
+# 학습 콘텐츠: 파이썬 무료강의 100분 완성 (1번 콘텐츠)
+# ==========================================
+
+# 1. 변수 및 자료형 (기초)
+user_name = "학습자"
+current_score = 0
+
+print(f"안녕하세요, {user_name}님! 파이썬 100분 완성 실습을 시작합니다.\n")
+
+# 2. 리스트와 사전(Dictionary) 자료형 자료 구조 활용
+quiz_bank = [
+    {
+        "question": "파이썬에서 리스트에 요소를 추가할 때 사용하는 함수는 무엇일까요?",
+        "answer": "append"
+    },
+    {
+        "question": "조건문에서 '그렇지 않으면'을 뜻하며, 여러 조건을 비교할 때 쓰는 예약어는?",
+        "answer": "elif"
+    },
+    {
+        "question": "반복문을 강제로 종료시키고 싶을 때 사용하는 키워드는?",
+        "answer": "break"
+    }
+]
+
+# 3. 반복문(for)과 조건문(if-else)을 활용한 퀴즈 실행
+for i, quiz in enumerate(quiz_bank, 1):
+    print(f"[질문 {i}] {quiz['question']}")
+    user_input = input("정답을 입력하세요: ").strip()
+    
+    # 대소문자 공백 제거 후 정답 비교
+    if user_input.lower() == quiz['answer'].lower():
+        print("정답입니다! +10점\n")
+        current_score += 10
+    else:
+        print(f"틀렸습니다. 정답은 [{quiz['answer']}] 입니다.\n")
+
+# 4. 최종 결과 출력 및 포맷팅
+print("-" * 30)
+print(f"최종 점수: {current_score} / {len(quiz_bank) * 10} 점")
+if current_score == 30:
+    print("축하합니다! 파이썬 기초 개념을 완벽히 이해하셨습니다.")
+else:
+    print("기초 개념을 다시 한번 복습해보세요!")
+print("-" * 30)
